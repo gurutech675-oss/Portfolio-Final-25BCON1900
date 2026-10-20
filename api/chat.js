@@ -1,4 +1,5 @@
-// Vercel serverless function. Configure GROQ_API_KEY in the Vercel project
+
+ // Vercel serverless function. Configure GROQ_API_KEY in the Vercel project
 // environment settings; do not commit the secret to the repository.
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -13,6 +14,7 @@ module.exports = async function handler(req, res) {
 
   const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
   const context = typeof req.body?.context === "string" ? req.body.context.slice(0, 12000) : "";
+
   if (!question) {
     return res.status(400).json({ error: "Please enter a question." });
   }
@@ -27,11 +29,26 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
         temperature: 0.7,
-        max_tokens: 180,
+        max_tokens: 800,
         messages: [
           {
             role: "system",
-            content: "You are an AI assistant for Rohit Raj's portfolio. Answer using only the portfolio context below. Do not invent personal details or claim experience not listed. If the context does not contain an answer, say so. Keep replies under 60 words.\n\nPORTFOLIO CONTEXT:\n" + context
+            content: `You are a helpful, knowledgeable AI assistant for Rohit Raj's portfolio website.
+
+You can answer questions on ANY topic, not just portfolio-related topics. These include programming, science, technology, mathematics, education, history, geography, general knowledge, writing, reasoning, entertainment, and everyday questions.
+
+Use the portfolio context below when the user asks about Rohit Raj, his skills, education, projects, experience, or portfolio.
+
+For questions unrelated to Rohit Raj or his portfolio, answer normally using your general knowledge. Do not force unrelated questions to connect to the portfolio, and never say you can only answer questions about the portfolio.
+
+Be accurate, clear, and helpful. Explain concepts with examples when useful. If you are uncertain about something, say so instead of inventing facts.
+
+Do not invent personal details about Rohit Raj that are not provided in the context.
+
+Keep responses concise by default, but provide more detail when the question requires it.
+
+PORTFOLIO CONTEXT:
+${context || "No portfolio context was provided. Answer general questions normally."}`
           },
           { role: "user", content: question }
         ]
@@ -41,6 +58,7 @@ module.exports = async function handler(req, res) {
     if (upstream.status === 429) {
       return res.status(429).json({ error: "Too many requests. Please wait and try again." });
     }
+
     if (!upstream.ok) {
       console.error("Groq API returned status", upstream.status);
       return res.status(502).json({ error: "AI service is temporarily unavailable." });
@@ -48,6 +66,7 @@ module.exports = async function handler(req, res) {
 
     const data = await upstream.json();
     const answer = data.choices?.[0]?.message?.content;
+
     if (typeof answer !== "string" || !answer.trim()) {
       return res.status(502).json({ error: "The AI returned an empty response." });
     }
