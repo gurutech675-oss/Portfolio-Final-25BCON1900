@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
         },
         body: JSON.stringify({
           model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
-          temperature: 0.4,
+          temperature: 0.8,
           max_tokens: 800,
           messages: [
             {
